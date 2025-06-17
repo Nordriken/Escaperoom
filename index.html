@@ -1,1 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape Room</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #game {
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <h1>Interactive Escape Room</h1>
+        <p id="message">You are locked in a room. Find the key to escape!</p>
+        <button id="search">Search the room</button>
+        <button id="use-key" disabled>Use key on door</button>
+    </div>
+    <script>
+        let hasKey = false;
 
+        document.getElementById('search').onclick = () => {
+            if (!hasKey) {
+                hasKey = true;
+                document.getElementById('message').textContent = 'You found a key hidden under the mat!';
+                document.getElementById('use-key').disabled = false;
+            } else {
+                document.getElementById('message').textContent = 'There is nothing else to find.';
+            }
+        };
+
+        document.getElementById('use-key').onclick = () => {
+            if (hasKey) {
+                document.getElementById('message').textContent = 'The door unlocks and you escape. Congratulations!';
+                document.getElementById('search').disabled = true;
+                document.getElementById('use-key').disabled = true;
+            }
+        };
+    </script>
+</body>
+</html>
