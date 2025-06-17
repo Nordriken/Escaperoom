@@ -1,146 +1,141 @@
-diff --git a/index.html b/index.html
-index a8b9ff140ffa60c69c706b368541d9fe2b20020b..4ec987429fd4b5002d9ae3a62b3892e7e7b348b9 100644
---- a/index.html
-+++ b/index.html
-@@ -1,58 +1,140 @@
- <!DOCTYPE html>
- <html lang="en">
- <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Escape Room</title>
-+    <link
-+        rel="stylesheet"
-+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-+        integrity="sha256-sA+4scKErdTf30ZsYPsnr1D82mp4vO3/CLx60kNeVcw="
-+        crossorigin=""
-+    />
-     <style>
-         body {
-             font-family: Arial, sans-serif;
-             background-color: #222;
-             color: #fff;
-             display: flex;
-             flex-direction: column;
-             align-items: center;
-             justify-content: center;
-             height: 100vh;
-             margin: 0;
-         }
-         #game {
-             text-align: center;
-         }
-         button {
-             padding: 10px 20px;
-             margin: 10px;
-             font-size: 16px;
-         }
-+        #map {
-+            width: 100%;
-+            height: 50vh;
-+            margin-top: 20px;
-+        }
-     </style>
- </head>
- <body>
-     <div id="game">
-         <h1>Interactive Escape Room</h1>
-         <p id="message">You are locked in a room. Find the key to escape!</p>
-         <button id="search">Search the room</button>
-         <button id="use-key" disabled>Use key on door</button>
-     </div>
-+    <div id="map"></div>
-+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-+        integrity="sha256-Vuqqw5tITm3Gs4wH2RUXz3urh1qzHh0CqK5G7v0Xalw="
-+        crossorigin=""></script>
-     <script>
-         let hasKey = false;
- 
-+        let map;
-+        let userMarker;
-+        let keys = [];
-+        let foundKeys = 0;
-+
-+        function distance(lat1, lon1, lat2, lon2) {
-+            const R = 6371e3;
-+            const phi1 = lat1 * Math.PI / 180;
-+            const phi2 = lat2 * Math.PI / 180;
-+            const dPhi = (lat2 - lat1) * Math.PI / 180;
-+            const dLambda = (lon2 - lon1) * Math.PI / 180;
-+
-+            const a = Math.sin(dPhi / 2) * Math.sin(dPhi / 2) +
-+                Math.cos(phi1) * Math.cos(phi2) *
-+                Math.sin(dLambda / 2) * Math.sin(dLambda / 2);
-+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-+            return R * c;
-+        }
-+
-+        function spawnKeys(baseLat, baseLng) {
-+            keys = [
-+                { lat: baseLat + 0.0005, lng: baseLng, found: false },
-+                { lat: baseLat, lng: baseLng + 0.0005, found: false },
-+                { lat: baseLat - 0.0005, lng: baseLng - 0.0005, found: false }
-+            ];
-+            keys.forEach(k => {
-+                L.marker([k.lat, k.lng]).addTo(map);
-+            });
-+        }
-+
-+        function handlePosition(position) {
-+            const lat = position.coords.latitude;
-+            const lng = position.coords.longitude;
-+            if (!map) {
-+                map = L.map('map').setView([lat, lng], 18);
-+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-+                    maxZoom: 19
-+                }).addTo(map);
-+                userMarker = L.marker([lat, lng]).addTo(map);
-+                spawnKeys(lat, lng);
-+            } else {
-+                userMarker.setLatLng([lat, lng]);
-+                map.setView([lat, lng]);
-+            }
-+            keys.forEach(k => {
-+                if (!k.found && distance(lat, lng, k.lat, k.lng) < 50) {
-+                    k.found = true;
-+                    foundKeys++;
-+                    document.getElementById('message').textContent =
-+                        `You found key ${foundKeys}!`;
-+                    if (foundKeys >= keys.length) {
-+                        document.getElementById('use-key').disabled = false;
-+                    }
-+                }
-+            });
-+        }
-+
-+        if (navigator.geolocation) {
-+            navigator.geolocation.watchPosition(handlePosition, () => {
-+                document.getElementById('message').textContent =
-+                    'Unable to retrieve location.';
-+            }, { enableHighAccuracy: true });
-+        } else {
-+            document.getElementById('message').textContent =
-+                'Geolocation is not supported by your browser.';
-+        }
-+
-         document.getElementById('search').onclick = () => {
-             if (!hasKey) {
-                 hasKey = true;
-                 document.getElementById('message').textContent = 'You found a key hidden under the mat!';
-                 document.getElementById('use-key').disabled = false;
-             } else {
-                 document.getElementById('message').textContent = 'There is nothing else to find.';
-             }
-         };
- 
-         document.getElementById('use-key').onclick = () => {
--            if (hasKey) {
-+            if (hasKey || foundKeys >= keys.length) {
-                 document.getElementById('message').textContent = 'The door unlocks and you escape. Congratulations!';
-                 document.getElementById('search').disabled = true;
-                 document.getElementById('use-key').disabled = true;
-             }
-         };
-     </script>
- </body>
- </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape Room</title>
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-sA+4scKErdTf30ZsYPsnr1D82mp4vO3/CLx60kNeVcw="
+        crossorigin=""
+    />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #game {
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+        }
+        #map {
+            width: 100%;
+            height: 50vh;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <h1>Interactive Escape Room</h1>
+        <p id="message">You are locked in a room. Find the key to escape!</p>
+        <button id="search">Search the room</button>
+        <button id="use-key" disabled>Use key on door</button>
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-Vuqqw5tITm3Gs4wH2RUXz3urh1qzHh0CqK5G7v0Xalw="
+        crossorigin=""></script>
+    <script>
+        let hasKey = false;
+
+        let map;
+        let userMarker;
+        let keys = [];
+        let foundKeys = 0;
+
+        function distance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const phi1 = lat1 * Math.PI / 180;
+            const phi2 = lat2 * Math.PI / 180;
+            const dPhi = (lat2 - lat1) * Math.PI / 180;
+            const dLambda = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(dPhi / 2) * Math.sin(dPhi / 2) +
+                Math.cos(phi1) * Math.cos(phi2) *
+                Math.sin(dLambda / 2) * Math.sin(dLambda / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function spawnKeys(baseLat, baseLng) {
+            keys = [
+                { lat: baseLat + 0.0005, lng: baseLng, found: false },
+                { lat: baseLat, lng: baseLng + 0.0005, found: false },
+                { lat: baseLat - 0.0005, lng: baseLng - 0.0005, found: false }
+            ];
+            keys.forEach(k => {
+                L.marker([k.lat, k.lng]).addTo(map);
+            });
+        }
+
+        function handlePosition(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            if (!map) {
+                map = L.map('map').setView([lat, lng], 18);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19
+                }).addTo(map);
+                userMarker = L.marker([lat, lng]).addTo(map);
+                spawnKeys(lat, lng);
+            } else {
+                userMarker.setLatLng([lat, lng]);
+                map.setView([lat, lng]);
+            }
+            keys.forEach(k => {
+                if (!k.found && distance(lat, lng, k.lat, k.lng) < 50) {
+                    k.found = true;
+                    foundKeys++;
+                    document.getElementById('message').textContent =
+                        `You found key ${foundKeys}!`;
+                    if (foundKeys >= keys.length) {
+                        document.getElementById('use-key').disabled = false;
+                    }
+                }
+            });
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(handlePosition, () => {
+                document.getElementById('message').textContent =
+                    'Unable to retrieve location.';
+            }, { enableHighAccuracy: true });
+        } else {
+            document.getElementById('message').textContent =
+                'Geolocation is not supported by your browser.';
+        }
+
+        document.getElementById('search').onclick = () => {
+            if (!hasKey) {
+                hasKey = true;
+                document.getElementById('message').textContent = 'You found a key hidden under the mat!';
+                document.getElementById('use-key').disabled = false;
+            } else {
+                document.getElementById('message').textContent = 'There is nothing else to find.';
+            }
+        };
+
+        document.getElementById('use-key').onclick = () => {
+            if (hasKey) {
+            if (hasKey || foundKeys >= keys.length) {
+                document.getElementById('message').textContent = 'The door unlocks and you escape. Congratulations!';
+                document.getElementById('search').disabled = true;
+                document.getElementById('use-key').disabled = true;
+            }
+        };
+    </script>
+</body>
+</html>
